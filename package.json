@@ -1,0 +1,14 @@
+{
+    "name": "enginemill-db",
+    "version": "0.1.0",
+    "description": "A database abstraction layer.",
+    "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
+    "dependencies": {
+        "couchdb-api": "1.2.0"
+    },
+    "devDependencies": {
+        "coffee-script": "1.4.0",
+        "mocha": "1.6.0",
+        "test-tools": "0.1.0"
+    }
+}
