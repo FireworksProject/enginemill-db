@@ -38,19 +38,21 @@ describe 'connect()', ->
             t.equal(url.protocol, 'https:', 'url protocol')
             t.equal(url.hostname, 'example.com', 'url hostname')
             t.equal(url.port, '443', 'url port')
-            server = {database: database}
-            return server
+            return {database: database}
 
         database = (name) ->
             t.equal(name, 'test_db', 'database name')
             return mockDB
 
         db = EDB.connect(opts)
-        @assert(Object.isFrozen(db), 'API Object is frozen')
         @assert(_.isFunction(db.get), 'db.get')
         @assert(_.isFunction(db.set), 'db.set')
         @assert(_.isFunction(db.remove), 'db.remove')
         @assert(_.isFunction(db.query), 'db.query')
+
+        # Check private property is not writable
+        db.couchdb = {}
+        @strictEqual(db.couchdb, mockDB, 'db.couchdb')
         return done()
 
 

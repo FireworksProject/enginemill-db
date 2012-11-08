@@ -66,7 +66,7 @@ exports.connect = (aOpts) ->
     Object.defineProperty(db, 'couchdb', {
         value: couchdb
     })
-    return Object.freeze(db)
+    return db
 
 
 isEmpty = (obj) ->
@@ -75,6 +75,7 @@ isEmpty = (obj) ->
 
 errMessage = (msg) ->
     return "enginemill-db::" + msg
+
 
 throwErr = (err, code) ->
     err.code = code
