@@ -6,7 +6,30 @@ INVPARAM = 'INVPARAM'
 api = Object.create(null)
 
 
+# Public: Fetch a document from the database.
+#
+# aId - The id String of the document to get.
+#
+# Returns a Q::Promise Object.
 api.get = (aId) ->
+    get_params(aId)
+
+    d = Q.defer()
+    revisions = @revisions
+    @couchdb.doc(aId).get (err, body, res) ->
+        if not err and res.statusCode is 200
+            doc = receiveDoc(@body, revisions)
+            return d.resolve(doc)
+
+        if res.statusCode is 404 then return d.resolve(null)
+
+        # Assume all other cases are unexpected exceptions.
+        return d.reject(new Error(couchdbErr(err)))
+
+    return d.promise
+
+# Private: Check parameters for api.get()
+get_params = (aId) ->
     if isEmpty(aId)
         msg = errMessage("api.get(aId) aId is required.")
         throwInvParam(new Error(msg))
@@ -15,20 +38,40 @@ api.get = (aId) ->
         msg = errMessage("api.get(aId) aId must be a String.")
         throwInvParam(new Error(msg))
 
+    return
+
+
+# Public: Save a document to the database.
+#
+# aDoc = The JavaScript Object representing the document.
+#
+# Returns a Q::Promise Object.
+api.set = (aDoc) ->
+    set_params(aDoc)
+
+    document = repr(aDoc)
+    rev = @revisions[document._id]
+    if rev then document._rev = rev
+
     d = Q.defer()
-    @couchdb.doc(aId).get (err, body, res) ->
-        if not err and res.statusCode is 200
-            doc = repr(body)
-            delete doc._rev
+    revisions = @revisions
+    @couchdb.doc(document).save (err, body, res) ->
+        if not err and res.statusCode is 201
+            doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
-        if res.statusCode is 404
-            return d.resolve(null)
+
+        if res.statusCode is 409
+            err = new Error("Document conflict rejection id: #{@id}")
+            err.code = 'CONFLICT'
+            return d.reject(err)
+
+        # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
 
     return d.promise
 
-
-api.set = (aDoc) ->
+# Private: Check parameters for api.set()
+set_params = (aDoc) ->
     if Object(aDoc) isnt aDoc
         msg = errMessage("api.set(aDoc) aDoc must be an Object.")
         throwInvParam(new Error(msg))
@@ -37,21 +80,50 @@ api.set = (aDoc) ->
         msg = errMessage("api.set(aDoc) aDoc must not be an empty Object.")
         throwInvParam(new Error(msg))
 
+    return
+
+
+# Public: Delete a document from the database.
+#
+# aId - The id String of the document to delete.
+#
+# If the document has not been fetched with .get() or query() then an Error
+# with code 'INVPARAM' will be thrown.
+#
+# Returns a Q::Promise Object.
+api.remove = (aId) ->
+    remove_params(aId)
+
+    document = @couchdb.doc(aId)
+    rev = @revisions[document.id]
+    if rev then document.body = {_rev: rev}
+    else
+        msg = "A document must be fetched before "
+        msg += "it can be removed with api.remove(aId)."
+        throwInvParam(new Error(errMessage(msg)))
+
     d = Q.defer()
-    @couchdb.doc(aDoc).save (err, body, res) ->
-        if not err and res.statusCode is 201
-            doc = repr(@body)
-            delete doc._rev
-            return d.resolve(doc)
+    revisions = @revisions
+    document.del (err, body, res) ->
+        if not err and res.statusCode is 200
+            delete revisions[body.id]
+            return d.resolve(true)
+
+        if res.statusCode is 404
+            return d.resolve(false)
+
         if res.statusCode is 409
             err = new Error("Document conflict rejection id: #{@id}")
             err.code = 'CONFLICT'
             return d.reject(err)
 
+        # Assume all other cases are unexpected exceptions.
+        return d.reject(new Error(couchdbErr(err)))
+
     return d.promise
 
-
-api.remove = (aId) ->
+# Private: Check parameters for api.remove()
+remove_params = (aId) ->
     if isEmpty(aId)
         msg = errMessage("api.remove(aId) aId is required.")
         throwInvParam(new Error(msg))
@@ -63,7 +135,48 @@ api.remove = (aId) ->
     return
 
 
+# Public: Query an index of documents based on a key range.
+#
+# aIndex - The name String of the index to query.
+# aQuery - The Object hash of query parameters.
+#          .key        - The key to use (may be String, Number, Null, or Array).
+#          .limit      - The max Number of documents to include in the results.
+#          .descending - A Boolean flag which can be used to reverse the
+#                        order of the range scan (default: false).
+#          .startkey   - The key to begin a range scan on
+#                        (may be String, Number, Null, or Array).
+#          .endkey     - The key to end a range scan on
+#                        (may be String, Number, Null, or Array).
+#
+# It is assumed that the index has already been created through another
+# channel.  If it hasn't, then the returned Q::Promise will reject with a
+# 'NOTFOUND' Error.
+#
+# Returns a Q::Promise Object.
 api.query = (aIndex, aQuery) ->
+    query_params(aIndex, aQuery)
+
+    d = Q.defer()
+    revisions = @revisions
+    view = @couchdb.designDoc('application').view(aIndex)
+    view.query aQuery, (err, body, res) ->
+        if not err and res.statusCode is 200
+            docs = body.rows.map (row) ->
+                return receiveDoc(row.value, revisions)
+            return d.resolve(docs)
+
+        if res.statusCode is 404
+            err = new Error("Index '#{aIndex}' not found.")
+            err.code = 'NOTFOUND'
+            return d.reject(err)
+
+        # Assume all other cases are unexpected exceptions.
+        return d.reject(new Error(couchdbErr(err)))
+
+    return d.promise
+
+# Private: Check parameters for api.query()
+query_params = (aIndex, aQuery) ->
     if isEmpty(aIndex)
         msg = errMessage("api.query(aIndex, aQuery) aIndex is required.")
         throwInvParam(new Error(msg))
@@ -82,9 +195,20 @@ api.query = (aIndex, aQuery) ->
         msg += "not be an empty Object."
         msg = errMessage(msg)
         throwInvParam(new Error(msg))
+
     return
 
 
+# Private: Utility for api functions that receive documents.
+receiveDoc = (aIncoming, aRevisions) ->
+    doc = repr(aIncoming)
+    if doc._rev
+        aRevisions[doc._id] = doc._rev
+        delete doc._rev
+    return doc
+
+
+# Private: Normalize an object.
 repr = do ->
     proto = Object.create(null)
     Object.defineProperty(proto, 'valueOf', {
@@ -92,8 +216,7 @@ repr = do ->
     })
 
     convert = (a) ->
-        if Object(a) isnt a or typeof a.valueOf is 'function'
-            return a
+        if Object(a) isnt a then return a
 
         rv = Object.keys(a).reduce((rv, key) =>
             rv[key] = a[key]
@@ -105,6 +228,7 @@ repr = do ->
     return convert
 
 
+# Private: Compose a CouchDB error string.
 couchdbErr = (aErr) ->
     msg = "CouchDB engine error: "
     if aErr.error and aErr.reason
@@ -154,6 +278,7 @@ exports.connect = (aOpts) ->
         msg = errMessage('connect(aOpts) aOpts.database must be a String.')
         throwInvParam(new Error(msg))
 
+    # couchdb-api requires a URL string to initialize
     url = if aOpts.secure then 'https://' else 'http://'
     url += aOpts.hostname
     if aOpts.port then url += ":" + aOpts.port
@@ -162,25 +287,34 @@ exports.connect = (aOpts) ->
 
     couchdb = COUCHDB.srv(url).db(aOpts.database)
 
+    # Use Object.create() and Object.defineProperty() to createa clean Object
+    # for the caller.
     db = Object.create(api)
     Object.defineProperty(db, 'couchdb', {
         value: couchdb
     })
+    Object.defineProperty(db, 'revisions', {
+        value: Object.create({})
+    })
     return db
 
 
+# Private: Used for internal parameter checking.
 isEmpty = (obj) ->
     return obj is '' or obj is undefined or obj is null
 
 
+# Private: Used for internal parameter checking.
 errMessage = (msg) ->
     return "enginemill-db::" + msg
 
 
+# Private: Used for internal parameter checking.
 throwInvParam = (err) ->
     return throwErr(err, INVPARAM)
 
 
+# Private: Used for internal parameter checking.
 throwErr = (err, code) ->
     err.code = code
     throw err
