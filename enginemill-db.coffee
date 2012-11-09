@@ -3,6 +3,8 @@ Q = require 'q'
 
 INVPARAM = 'INVPARAM'
 
+# Use Object.create() to create a clean JavaScript object to hang the API
+# methods on.
 api = Object.create(null)
 
 
@@ -17,7 +19,7 @@ api.get = (aId) ->
     d = Q.defer()
     revisions = @revisions
     @couchdb.doc(aId).get (err, body, res) ->
-        if not err and res.statusCode is 200
+        if res.statusCode is 200
             doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
 
@@ -56,7 +58,7 @@ api.set = (aDoc) ->
     d = Q.defer()
     revisions = @revisions
     @couchdb.doc(document).save (err, body, res) ->
-        if not err and res.statusCode is 201
+        if res.statusCode is 201
             doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
 
@@ -105,7 +107,7 @@ api.remove = (aId) ->
     d = Q.defer()
     revisions = @revisions
     document.del (err, body, res) ->
-        if not err and res.statusCode is 200
+        if res.statusCode is 200
             delete revisions[body.id]
             return d.resolve(true)
 
@@ -160,7 +162,7 @@ api.query = (aIndex, aQuery) ->
     revisions = @revisions
     view = @couchdb.designDoc('application').view(aIndex)
     view.query aQuery, (err, body, res) ->
-        if not err and res.statusCode is 200
+        if res.statusCode is 200
             docs = body.rows.map (row) ->
                 return receiveDoc(row.value, revisions)
             return d.resolve(docs)
