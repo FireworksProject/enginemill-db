@@ -18,12 +18,23 @@ api.get = (aId) ->
 
     d = Q.defer()
     revisions = @revisions
+    couchdb = @couchdb
     @couchdb.doc(aId).get (err, body, res) ->
         if res.statusCode is 200
             doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
 
-        if res.statusCode is 404 then return d.resolve(null)
+        if res.statusCode is 404
+            # There are two kinds of Not Found responses. One for a missing
+            # database, and one for a missing document.
+            if err and err.reason is 'no_db_file'
+                msg = "api.get(aId) database '#{couchdb.name}' does not exist."
+                err = new Error(errMessage(msg))
+                err.code = 'ENODB'
+                return d.reject(err)
+
+            # Missing document.
+            return d.resolve(null)
 
         # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
@@ -57,6 +68,7 @@ api.set = (aDoc) ->
 
     d = Q.defer()
     revisions = @revisions
+    couchdb = @couchdb
     @couchdb.doc(document).save (err, body, res) ->
         if res.statusCode is 201
             doc = receiveDoc(@body, revisions)
@@ -65,6 +77,14 @@ api.set = (aDoc) ->
         if res.statusCode is 409
             err = new Error("Document conflict rejection id: #{@id}")
             err.code = 'CONFLICT'
+            return d.reject(err)
+
+        # In this case of a Not Found response, the missing database can be the
+        # only culprit.
+        if res.statusCode is 404
+            msg = "api.set(aId) database '#{couchdb.name}' does not exist."
+            err = new Error(errMessage(msg))
+            err.code = 'ENODB'
             return d.reject(err)
 
         # Assume all other cases are unexpected exceptions.
@@ -160,6 +180,7 @@ api.query = (aIndex, aQuery) ->
 
     d = Q.defer()
     revisions = @revisions
+    couchdb = @couchdb
     view = @couchdb.designDoc('application').view(aIndex)
     view.query aQuery, (err, body, res) ->
         if res.statusCode is 200
@@ -168,6 +189,15 @@ api.query = (aIndex, aQuery) ->
             return d.resolve(docs)
 
         if res.statusCode is 404
+            # There are two kinds of Not Found responses. One for a missing
+            # database, and one for a missing design document.
+            if err and err.reason is 'no_db_file'
+                msg = "api.query(aId) database '#{couchdb.name}' does not exist."
+                err = new Error(errMessage(msg))
+                err.code = 'ENODB'
+                return d.reject(err)
+
+            # Missing design document.
             err = new Error("Index '#{aIndex}' not found.")
             err.code = 'NOTFOUND'
             return d.reject(err)

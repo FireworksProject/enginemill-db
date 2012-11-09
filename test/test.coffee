@@ -213,10 +213,28 @@ describe 'api.get(aId)', ->
         return
 
 
-    ## TODO: it 'should reject if the database does not exist'
-    # That's a special 404 case:
-    #   reason: "missing" (missing document)
-    #   reason: "no_db_file" (missing database)
+    it 'should reject if the database does not exist', T (done) ->
+        @expectCount(2)
+        t = @
+
+        handler = (req, res) ->
+            res.statusCode = 404
+            res.end(JSON.stringify({error: 'not_found', reason: 'no_db_file'}))
+            return
+
+        gServer.handler(handler)
+
+        success = (doc) ->
+            t.assert(false, 'success handler should not execute')
+            return done()
+
+        failure = (err) ->
+            t.equal(err.code, 'ENODB', 'Error.code')
+            t.equal(err.message, "enginemill-db::api.get(aId) database 'test_db' does not exist.", 'Error.message')
+            return done()
+
+        EDB.connect(OPTS).get('foo').then(success, failure).done()
+        return
 
 
     it 'should reject if there was a problem', T (done) ->
@@ -496,10 +514,29 @@ describe 'api.set(aDoc)', ->
         return
 
 
-    ## TODO: it 'should reject if the database does not exist'
-    # That's a special 404 case:
-    #   reason: "missing" (missing document)
-    #   reason: "no_db_file" (missing database)
+    it 'should reject if the database does not exist', T (done) ->
+        @expectCount(2)
+        t = @
+
+        handler = (req, res) ->
+            res.statusCode = 404
+            res.end(JSON.stringify({error: 'not_found', reason: 'no_db_file'}))
+            return
+
+        gServer.handler(handler)
+
+        success = (doc) ->
+            t.assert(false, 'success handler should not execute')
+            return done()
+
+        failure = (err) ->
+            t.equal(err.code, 'ENODB', 'Error.code')
+            t.equal(err.message, "enginemill-db::api.set(aId) database 'test_db' does not exist.", 'Error.message')
+            return done()
+
+        doc = {_id: 'foobar'}
+        EDB.connect(OPTS).set(doc).then(success, failure).done()
+        return
 
     return
 
@@ -639,10 +676,8 @@ describe 'api.remove(aId)', ->
         return
 
 
-    ## TODO: it 'should reject if the database does not exist'
-    # That's a special 404 case:
-    #   reason: "missing" (missing document)
-    #   reason: "no_db_file" (missing database)
+    # SKIP: the .remove() method does not need to reject if the database does
+    # not exist, since the document in question must be fetched first.
 
 
     it 'should reject with an error if there is a conflict', T (done) ->
@@ -848,10 +883,28 @@ describe 'api.query(aIndex, aQuery)', ->
         return
 
 
-    ## TODO: it 'should reject if the database does not exist'
-    # That's a special 404 case:
-    #   reason: "missing" (missing document)
-    #   reason: "no_db_file" (missing database)
+    it 'should reject if the database does not exist', T (done) ->
+        @expectCount(2)
+        t = @
+
+        handler = (req, res) ->
+            res.statusCode = 404
+            res.end(JSON.stringify({error: 'not_found', reason: 'no_db_file'}))
+            return
+
+        gServer.handler(handler)
+
+        success = (doc) ->
+            t.assert(false, 'success handler should not execute')
+            return done()
+
+        failure = (err) ->
+            t.equal(err.code, 'ENODB', 'Error.code')
+            t.equal(err.message, "enginemill-db::api.query(aId) database 'test_db' does not exist.", 'Error.message')
+            return done()
+
+        EDB.connect(OPTS).query('foo').then(success, failure).done()
+        return
 
 
     it 'should reject if there was a problem', T (done) ->
