@@ -41,15 +41,58 @@ Create a database API by creating connection. In the case of CouchDB it looks li
 ```
 
 ## Database API
-Once you have a database connection, you can start using the API.
+Once you have a database connection, you can start using the API. All function
+return a Promise object from the Q module. Use the examples below and the
+[Q documentation](https://github.com/kriskowal/q#readme)
+to learn how to use Promises to be a master of this asynchronous environment.
 
-### get()
+### get
+*get(aId)*
+Fetch a document from the database.
 
-### set()
+* aId - The id String of the document to get.
 
-### remove()
+Returns a Q::Promise Object.
 
-### query()
+### set
+*set(aDoc)*
+Save a document to the database.
+
+* aDoc = The JavaScript Object representing the document.
+
+Returns a Q::Promise Object.
+
+### remove
+*remove(aId)*
+Delete a document from the database.
+
+aId - The id String of the document to delete.
+
+If the document has not been fetched with .get() or query() then an Error
+with code 'INVPARAM' will be thrown.
+
+Returns a Q::Promise Object.
+
+### query
+*query(aIndex, aQuery)*
+Query an index of documents based on a key range.
+
+aIndex - The name String of the index to query.
+aQuery - The Object hash of query parameters.
+         .key        - The key to use (may be String, Number, Null, or Array).
+         .limit      - The max Number of documents to include in the results.
+         .descending - A Boolean flag which can be used to reverse the
+                       order of the range scan (default: false).
+         .startkey   - The key to begin a range scan on
+                       (may be String, Number, Null, or Array).
+         .endkey     - The key to end a range scan on
+                       (may be String, Number, Null, or Array).
+
+It is assumed that the index has already been created through another
+channel.  If it hasn't, then the returned Q::Promise will reject with a
+'NOTFOUND' Error.
+
+Returns a Q::Promise Object.
 
 
 Copyright and License
