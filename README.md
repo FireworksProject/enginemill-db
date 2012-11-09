@@ -28,7 +28,9 @@ from the root of your project.
 ## Usage
 Load Enginemill DB into a Node.js module by requiring it.
 
+```JavaScript
     var EDB = require('enginemill-db');
+```
 
 Create a database API by creating connection. In the case of CouchDB it looks like this:
 ```JavaScript
@@ -47,26 +49,50 @@ return a Promise object from the Q module. Use the examples below and the
 to learn how to use Promises to be a master of this asynchronous environment.
 
 ### get
-*get(aId)*
-Fetch a document from the database.
+_get(aId)_ Fetch a document from the database.
 
 * aId - The id String of the document to get.
 
-Returns a Q::Promise Object.
+Returns a Q::Promise Object. If the document does not exist in the database
+then the promise will resolve to null.
+
+```JavaScript
+function requestHandler(req, res) {
+    var postId = req.url.split('/')[1];
+
+    function success(document) {
+        if (document) {
+            res.statusCode = 200;
+            res.end(document.body);
+        } else {
+            res.statusCode = 404;
+            res.end('Not Found');
+        }
+        return;
+    }
+
+    function failure(err) {
+        res.statusCode = 500;
+        res.end(err.stack);
+        return;
+    }
+
+    db.get(postId).then(success, failure);
+    return;
+}
+```
 
 ### set
-*set(aDoc)*
-Save a document to the database.
+_set(aDoc)_ Save a document to the database.
 
-* aDoc = The JavaScript Object representing the document.
+* aDoc - The JavaScript Object representing the document.
 
 Returns a Q::Promise Object.
 
 ### remove
-*remove(aId)*
-Delete a document from the database.
+_remove(aId)_ Delete a document from the database.
 
-aId - The id String of the document to delete.
+* aId - The id String of the document to delete.
 
 If the document has not been fetched with .get() or query() then an Error
 with code 'INVPARAM' will be thrown.
@@ -74,18 +100,17 @@ with code 'INVPARAM' will be thrown.
 Returns a Q::Promise Object.
 
 ### query
-*query(aIndex, aQuery)*
-Query an index of documents based on a key range.
+_query(aIndex, aQuery)_ Query an index of documents based on a key range.
 
-aIndex - The name String of the index to query.
-aQuery - The Object hash of query parameters.
-         .key        - The key to use (may be String, Number, Null, or Array).
-         .limit      - The max Number of documents to include in the results.
-         .descending - A Boolean flag which can be used to reverse the
+* aIndex - The name String of the index to query.
+* aQuery - The Object hash of query parameters.
+*          .key        - The key to use (may be String, Number, Null, or Array).
+*          .limit      - The max Number of documents to include in the results.
+*          .descending - A Boolean flag which can be used to reverse the
                        order of the range scan (default: false).
-         .startkey   - The key to begin a range scan on
+*          .startkey   - The key to begin a range scan on
                        (may be String, Number, Null, or Array).
-         .endkey     - The key to end a range scan on
+*          .endkey     - The key to end a range scan on
                        (may be String, Number, Null, or Array).
 
 It is assumed that the index has already been created through another
