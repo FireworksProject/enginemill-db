@@ -1,6 +1,6 @@
 {
     "name": "enginemill-db",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "A database abstraction layer.",
     "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
     "main": "enginemill-db",
