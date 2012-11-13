@@ -284,6 +284,9 @@ exports.api = api
 #         .database - The String database name to use.
 #         .secure   - A boolean flag to indicate the connection should be
 #                     secure (default: false).
+#         .creds    - An credentials Object hash.
+#                     .username - The username String.
+#                     .password - The password String.
 #
 # Returns a database API Object.
 #
@@ -310,8 +313,20 @@ exports.connect = (aOpts) ->
         msg = errMessage('connect(aOpts) aOpts.database must be a String.')
         throwInvParam(new Error(msg))
 
+    if aOpts.creds
+        msg = null
+        if Object(aOpts.creds) isnt aOpts.creds
+            msg = errMessage('connect(aOpts) aOpts.creds must be an Object.')
+        else if isEmpty(aOpts.creds.username)
+            msg = errMessage('connect(aOpts) aOpts.creds.username must be a String.')
+        else if isEmpty(aOpts.creds.password)
+            msg = errMessage('connect(aOpts) aOpts.creds.password must be a String.')
+        if msg then throwInvParam(new Error(msg))
+
     # couchdb-api requires a URL string to initialize
     url = if aOpts.secure then 'https://' else 'http://'
+    if aOpts.creds
+        url += "#{aOpts.creds.username}:#{aOpts.creds.password}@"
     url += aOpts.hostname
     if aOpts.port then url += ":" + aOpts.port
     else if aOpts.secure then url += ":443"

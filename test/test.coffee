@@ -25,10 +25,11 @@ describe 'connect()', ->
 
 
     it 'should create a database connection', T (done) ->
-        @expectCount(9)
+        @expectCount(10)
         opts = _.clone(OPTS)
         opts.hostname = 'example.com'
         opts.secure = true
+        opts.creds = {username: 'uname', password: 'secret'}
         delete opts.port
 
         mockDB = {}
@@ -40,6 +41,7 @@ describe 'connect()', ->
             t.equal(url.protocol, 'https:', 'url protocol')
             t.equal(url.hostname, 'example.com', 'url hostname')
             t.equal(url.port, '443', 'url port')
+            t.equal(url.auth, 'uname:secret', 'url auth')
             return {db: database}
 
         database = (name) ->
@@ -123,6 +125,20 @@ describe 'connect()', ->
         catch err
             @equal(err.code, 'INVPARAM', 'code')
             @equal(err.message, 'enginemill-db::connect(aOpts) aOpts.database must be a String.', 'message')
+
+        @expectCount(2)
+        return done()
+
+
+    it 'should raise an exception if aOpts.creds is provided but invalid', T (done) ->
+        opts = _.clone(OPTS)
+        opts.creds = {foo: 'bar'}
+
+        try
+            EDB.connect(opts)
+        catch err
+            @equal(err.code, 'INVPARAM', 'code')
+            @equal(err.message, 'enginemill-db::connect(aOpts) aOpts.creds.username must be a String.', 'message')
 
         @expectCount(2)
         return done()
