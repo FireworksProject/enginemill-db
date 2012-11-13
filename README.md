@@ -32,7 +32,7 @@ Load Enginemill DB into a Node.js module by requiring it.
     var EDB = require('enginemill-db');
 ```
 
-Create a database API by creating connection. In the case of CouchDB it looks like this:
+Create a database API by creating a connection. In the case of CouchDB it looks like this:
 ```JavaScript
     var db = EDB.connect({
       hostname: 'localhost'
@@ -41,6 +41,27 @@ Create a database API by creating connection. In the case of CouchDB it looks li
     , database: 'my_database'
     });
 ```
+
+The connect() docs:
+
+### ::connect
+_::connect(aOpts)_ Create a database connection.
+
+* aOpts - An options Object hash
+* aOpts.hostname - The String hostname of the CouchDB server.
+* aOpts.port - The port Number to use (default: 5984 if aOpts.secure is
+               false, and 443 if it is true).
+* aOpts.database - The String database name to use.
+* aOpts.secure - A boolean flag to indicate the connection should be
+            secure (default: false).
+* aOpts.creds - An credentials Object hash.
+* aOpts.creds.username - The username String.
+* aOpts.creds.password - The password String.
+
+_Throws_ Error objects with code 'INVPARAM' if any invalid parameters are
+passed or required parameters are missing.
+
+_Returns_ a Database API instance.
 
 ## Database API
 Once you have a database connection, you can start using the API. All function
@@ -53,8 +74,9 @@ _get(aId)_ Fetch a document from the database.
 
 * aId - The id String of the document to get.
 
-Returns a Q::Promise Object. If the document does not exist in the database
-then the promise will resolve to null.
+_Returns_ a Q::Promise Object which resolves to an Object representation of the
+document. If the document does not exist in the database then the promise will
+resolve to null.
 
 ```JavaScript
 function requestHandler(req, res) {
@@ -87,7 +109,8 @@ _set(aDoc)_ Save a document to the database.
 
 * aDoc - The JavaScript Object representing the document.
 
-Returns a Q::Promise Object.
+_Returns_ a Q::Promise Object which resolves to a *new* Object representation
+of the document. The promise will reject if there is a conflict error.
 
 ### remove
 _remove(aId)_ Delete a document from the database.
@@ -97,27 +120,30 @@ _remove(aId)_ Delete a document from the database.
 If the document has not been fetched with .get() or query() then an Error
 with code 'INVPARAM' will be thrown.
 
-Returns a Q::Promise Object.
+_Returns_ a Q::Promise Object which resolves to `true` if the document was
+deleted and `false` if it didn't exist in the first place. The promise will
+reject if there is a conflict error.
 
 ### query
 _query(aIndex, aQuery)_ Query an index of documents based on a key range.
 
 * aIndex - The name String of the index to query.
 * aQuery - The Object hash of query parameters.
-*          .key        - The key to use (may be String, Number, Null, or Array).
-*          .limit      - The max Number of documents to include in the results.
-*          .descending - A Boolean flag which can be used to reverse the
-                       order of the range scan (default: false).
-*          .startkey   - The key to begin a range scan on
-                       (may be String, Number, Null, or Array).
-*          .endkey     - The key to end a range scan on
-                       (may be String, Number, Null, or Array).
+* aQuery.key - The key to use (may be String, Number, Null, or Array).
+* aQuery.limit - The max Number of documents to include in the results.
+* aQuery.descending - A Boolean flag which can be used to reverse the
+                      order of the range scan (default: false).
+* aQuery.startkey - The key to begin a range scan on
+                    (may be String, Number, Null, or Array).
+* aQuery.endkey - The key to end a range scan on
+                  (may be String, Number, Null, or Array).
 
 It is assumed that the index has already been created through another
 channel.  If it hasn't, then the returned Q::Promise will reject with a
 'NOTFOUND' Error.
 
-Returns a Q::Promise Object.
+_Returns_ a Q::Promise Object which resolves to an Array of documents
+represented by JavaScript Objects.
 
 
 Copyright and License

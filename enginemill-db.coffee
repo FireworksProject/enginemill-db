@@ -12,7 +12,9 @@ api = Object.create(null)
 #
 # aId - The id String of the document to get.
 #
-# Returns a Q::Promise Object.
+# Returns a Q::Promise Object which resolves to an Object representation of the
+# document. If the document does not exist in the database then the promise
+# will resolve to null.
 api.get = (aId) ->
     get_params(aId)
 
@@ -58,7 +60,8 @@ get_params = (aId) ->
 #
 # aDoc = The JavaScript Object representing the document.
 #
-# Returns a Q::Promise Object.
+# Returns a Q::Promise Object which resolves to a *new* Object representation
+# of the document. The promise will reject if there is a conflict error.
 api.set = (aDoc) ->
     set_params(aDoc)
 
@@ -112,7 +115,9 @@ set_params = (aDoc) ->
 # If the document has not been fetched with .get() or query() then an Error
 # with code 'INVPARAM' will be thrown.
 #
-# Returns a Q::Promise Object.
+# Returns a Q::Promise Object which resolves to `true` if the document was
+# deleted and `false` if it didn't exist in the first place. The promise will
+# reject if there is a conflict error.
 api.remove = (aId) ->
     remove_params(aId)
 
@@ -174,7 +179,8 @@ remove_params = (aId) ->
 # channel.  If it hasn't, then the returned Q::Promise will reject with a
 # 'NOTFOUND' Error.
 #
-# Returns a Q::Promise Object.
+# Returns a Q::Promise Object which resolves to an Array of documents
+# represented by JavaScript Objects.
 api.query = (aIndex, aQuery) ->
     query_params(aIndex, aQuery)
 
@@ -275,7 +281,7 @@ couchdbErr = (aErr) ->
 exports.api = api
 
 
-# Public: Create a database connection
+# Public: Create a database connection.
 #
 # aOpts - An options Object hash
 #         .hostname - The String hostname of the CouchDB server.
@@ -288,10 +294,10 @@ exports.api = api
 #                     .username - The username String.
 #                     .password - The password String.
 #
-# Returns a database API Object.
-#
 # Throws Error objects with code 'INVPARAM' if any invalid parameters are
 # passed or required parameters are missing.
+#
+# Returns a database API Object.
 exports.connect = (aOpts) ->
     if isEmpty(aOpts.hostname)
         msg = errMessage('connect(aOpts) aOpts.hostname is required.')
