@@ -162,34 +162,6 @@ describe 'API with mock server', ->
     describe 'api.get(aId)', ->
 
 
-        it 'should raise an exception if aId is missing', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.get()
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.get(aId) aId is required.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aId isnt a String', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.get({})
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.get(aId) aId must be a String.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
         it 'should return a document', T (done) ->
             @expectCount(4)
             t = @
@@ -204,7 +176,7 @@ describe 'API with mock server', ->
             gServer.handler(handler)
 
             success = (doc) ->
-                t.equal(doc._id, '123abc', 'returned document')
+                t.equal(doc._id, '123abc', '._id')
                 t.equal(doc._rev, undefined, '._rev')
                 t.equal(doc.field_1, 1, '.field_1')
                 return done()
@@ -282,34 +254,6 @@ describe 'API with mock server', ->
 
 
     describe 'api.set(aDoc)', ->
-
-        it 'should raise an exception if aDoc isnt an Object', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.set('foo')
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.set(aDoc) aDoc must be an Object.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aDoc is an empty Object', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.set({})
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.set(aDoc) aDoc must not be an empty Object.', 'message')
-
-            @expectCount(2)
-            return done()
-
 
         it 'should set an existing document', T (done) ->
             @expectCount(7)
@@ -551,34 +495,6 @@ describe 'API with mock server', ->
 
     describe 'api.remove(aId)', ->
 
-        it 'should raise an exception if aId is missing', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.remove()
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.remove(aId) aId is required.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aId isnt a String', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.remove(12345)
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.remove(aId) aId must be a String.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
         it 'should delete a document and return true', T (done) ->
             @expectCount(4)
             t = @
@@ -715,62 +631,6 @@ describe 'API with mock server', ->
 
 
     describe 'api.query(aIndex, aQuery)', ->
-
-        it 'should raise an exception if aIndex is missing', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.query('')
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) aIndex is required.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aIndex isnt a String', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.query(12345)
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) aIndex must be a String.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aQuery is passed but isnt an Object', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.query('index_name', 'some_string')
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) if passed, aQuery must be an Object.', 'message')
-
-            @expectCount(2)
-            return done()
-
-
-        it 'should raise an exception if aQuery is passed but is an empty Object', T (done) ->
-            opts = _.clone(OPTS)
-            api = EDB.connect(opts)
-
-            try
-                api.query('index_name', {})
-            catch err
-                @equal(err.code, 'INVPARAM', 'code')
-                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) if passed, aQuery must not be an empty Object.', 'message')
-
-            @expectCount(2)
-            return done()
-
 
         it 'should return an Array of results', T (done) ->
             @expectCount(5)
@@ -911,6 +771,237 @@ describe 'API with mock server', ->
                 return done()
 
             EDB.connect(OPTS).query('foo').then(success, failure).done()
+            return
+
+        return
+
+    return
+
+
+describe 'API without mock server', ->
+
+
+    describe 'api.get(aId)', ->
+
+        it 'should raise an exception if aId is missing', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.get()
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.get(aId) aId is required.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aId isnt a String', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.get({})
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.get(aId) aId must be a String.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should reject if a server connection cannot be made', T (done) ->
+            @expectCount(1)
+            t = @
+
+            success = (doc) ->
+                t.assert(false, 'success should not execute')
+                return done()
+
+            failure = (err) ->
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                return done()
+
+            EDB.connect(OPTS).get('123abc').then(success, failure).done()
+            return
+
+        return
+
+
+    describe 'api.set(aDoc)', ->
+
+        it 'should raise an exception if aDoc isnt an Object', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.set('foo')
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.set(aDoc) aDoc must be an Object.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aDoc is an empty Object', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.set({})
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.set(aDoc) aDoc must not be an empty Object.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should reject if a server connection cannot be made', T (done) ->
+            @expectCount(1)
+            t = @
+            document = {field_1: 1}
+
+            success = (doc) ->
+                t.assert(false, 'success should not execute')
+                return done()
+
+            failure = (err) ->
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                return done()
+
+            EDB.connect(OPTS).set(document).then(success, failure).done()
+            return
+
+        return
+
+
+    describe 'api.remove(aId)', ->
+
+        it 'should raise an exception if aId is missing', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.remove()
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.remove(aId) aId is required.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aId isnt a String', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.remove(12345)
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.remove(aId) aId must be a String.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should reject if a server connection cannot be made', T (done) ->
+            @expectCount(1)
+            t = @
+            docid = 'lkj3245098sdf'
+            docrev = '123-456'
+
+            success = (doc) ->
+                t.assert(false, 'success should not execute')
+                return done()
+
+            failure = (err) ->
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                return done()
+
+            db = EDB.connect(OPTS)
+            # Messing with the internals of the API to avoid extra work.
+            db.revisions[docid] = docrev
+            db.remove(docid).then(success, failure).done()
+            return
+
+        return
+
+
+    describe 'api.query(aIndex, aQuery)', ->
+
+        it 'should raise an exception if aIndex is missing', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.query('')
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) aIndex is required.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aIndex isnt a String', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.query(12345)
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) aIndex must be a String.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aQuery is passed but isnt an Object', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.query('index_name', 'some_string')
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) if passed, aQuery must be an Object.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should raise an exception if aQuery is passed but is an empty Object', T (done) ->
+            opts = _.clone(OPTS)
+            api = EDB.connect(opts)
+
+            try
+                api.query('index_name', {})
+            catch err
+                @equal(err.code, 'INVPARAM', 'code')
+                @equal(err.message, 'enginemill-db::api.query(aIndex, aQuery) if passed, aQuery must not be an empty Object.', 'message')
+
+            @expectCount(2)
+            return done()
+
+
+        it 'should reject if a server connection cannot be made', T (done) ->
+            @expectCount(1)
+            t = @
+
+            success = (doc) ->
+                t.assert(false, 'success should not execute')
+                return done()
+
+            failure = (err) ->
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                return done()
+
+            EDB.connect(OPTS).query('people_by_email').then(success, failure).done()
             return
 
         return

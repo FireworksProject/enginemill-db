@@ -21,7 +21,7 @@ api.get = (aId) ->
     d = Q.defer()
     revisions = @revisions
     couchdb = @couchdb
-    @couchdb.doc(aId).get (err, body, res) ->
+    @couchdb.doc(aId).get(createHandler(d, (err, body, res) ->
         if res.statusCode is 200
             doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
@@ -40,6 +40,7 @@ api.get = (aId) ->
 
         # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
+    ))
 
     return d.promise
 
@@ -72,7 +73,7 @@ api.set = (aDoc) ->
     d = Q.defer()
     revisions = @revisions
     couchdb = @couchdb
-    @couchdb.doc(document).save (err, body, res) ->
+    @couchdb.doc(document).save(createHandler(d, (err, body, res) ->
         if res.statusCode is 201
             doc = receiveDoc(@body, revisions)
             return d.resolve(doc)
@@ -92,6 +93,7 @@ api.set = (aDoc) ->
 
         # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
+    ))
 
     return d.promise
 
@@ -131,7 +133,7 @@ api.remove = (aId) ->
 
     d = Q.defer()
     revisions = @revisions
-    document.del (err, body, res) ->
+    document.del(createHandler(d, (err, body, res) ->
         if res.statusCode is 200
             delete revisions[body.id]
             return d.resolve(true)
@@ -146,6 +148,7 @@ api.remove = (aId) ->
 
         # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
+    ))
 
     return d.promise
 
@@ -188,7 +191,7 @@ api.query = (aIndex, aQuery) ->
     revisions = @revisions
     couchdb = @couchdb
     view = @couchdb.designDoc('application').view(aIndex)
-    view.query aQuery, (err, body, res) ->
+    view.query(aQuery, createHandler(d, (err, body, res) ->
         if res.statusCode is 200
             docs = body.rows.map (row) ->
                 return receiveDoc(row.value, revisions)
@@ -210,6 +213,7 @@ api.query = (aIndex, aQuery) ->
 
         # Assume all other cases are unexpected exceptions.
         return d.reject(new Error(couchdbErr(err)))
+    ))
 
     return d.promise
 
@@ -237,6 +241,22 @@ query_params = (aIndex, aQuery) ->
     return
 
 
+# Private: Normalize a CouchDB response arguments and wrap the handler.
+createHandler = (aDeferred, aFunction) ->
+    handler = (err, body, res) ->
+        res = if Object(res) is res then res else Object.create(null)
+        body = if Object(body) is body then body else Object.create(null)
+
+        try
+            aFunction.call(@, err, body, res)
+        catch caughtError
+            return aDeferred.reject(caughtError)
+
+        return
+
+    return handler
+
+
 # Private: Utility for api functions that receive documents.
 receiveDoc = (aIncoming, aRevisions) ->
     doc = repr(aIncoming)
@@ -254,12 +274,13 @@ repr = do ->
     })
 
     convert = (a) ->
-        if Object(a) isnt a then return a
+        rv = Object.create(proto)
 
-        rv = Object.keys(a).reduce((rv, key) =>
-            rv[key] = a[key]
-            return rv
-        , Object.create(proto))
+        if Object(a) is a
+            rv = Object.keys(a).reduce((rv, key) ->
+                rv[key] = a[key]
+                return rv
+            , rv)
 
         return rv
 
