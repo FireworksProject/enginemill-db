@@ -820,7 +820,7 @@ describe 'API without mock server', ->
                 return done()
 
             failure = (err) ->
-                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection to http://localhost:5985/ refused.', 'err.message')
                 return done()
 
             EDB.connect(OPTS).get('123abc').then(success, failure).done()
@@ -869,7 +869,7 @@ describe 'API without mock server', ->
                 return done()
 
             failure = (err) ->
-                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection to http://localhost:5985/ refused.', 'err.message')
                 return done()
 
             EDB.connect(OPTS).set(document).then(success, failure).done()
@@ -919,7 +919,7 @@ describe 'API without mock server', ->
                 return done()
 
             failure = (err) ->
-                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection to http://localhost:5985/ refused.', 'err.message')
                 return done()
 
             db = EDB.connect(OPTS)
@@ -998,7 +998,7 @@ describe 'API without mock server', ->
                 return done()
 
             failure = (err) ->
-                t.equal(err.message, 'CouchDB engine error: HTTP Connection refused.', 'err.message')
+                t.equal(err.message, 'CouchDB engine error: HTTP Connection to http://localhost:5985/ refused.', 'err.message')
                 return done()
 
             EDB.connect(OPTS).query('people_by_email').then(success, failure).done()

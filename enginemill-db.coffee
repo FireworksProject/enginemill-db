@@ -19,18 +19,18 @@ api.get = (aId) ->
     get_params(aId)
 
     d = Q.defer()
-    revisions = @revisions
-    couchdb = @couchdb
+    self = @
     @couchdb.doc(aId).get(createHandler(d, (err, body, res) ->
         if res.statusCode is 200
-            doc = receiveDoc(@body, revisions)
+            doc = receiveDoc(@body, self.revisions)
             return d.resolve(doc)
 
         if res.statusCode is 404
             # There are two kinds of Not Found responses. One for a missing
             # database, and one for a missing document.
             if err and err.reason is 'no_db_file'
-                msg = "api.get(aId) database '#{couchdb.name}' does not exist."
+                msg = "api.get(aId) database '#{self.couchdb.name}' "
+                msg += "does not exist."
                 err = new Error(errMessage(msg))
                 err.code = 'ENODB'
                 return d.reject(err)
@@ -39,7 +39,7 @@ api.get = (aId) ->
             return d.resolve(null)
 
         # Assume all other cases are unexpected exceptions.
-        return d.reject(new Error(couchdbErr(err)))
+        return d.reject(new Error(couchdbErr.call(self, err)))
     ))
 
     return d.promise
@@ -71,11 +71,10 @@ api.set = (aDoc) ->
     if rev then document._rev = rev
 
     d = Q.defer()
-    revisions = @revisions
-    couchdb = @couchdb
+    self = @
     @couchdb.doc(document).save(createHandler(d, (err, body, res) ->
         if res.statusCode is 201
-            doc = receiveDoc(@body, revisions)
+            doc = receiveDoc(@body, self.revisions)
             return d.resolve(doc)
 
         if res.statusCode is 409
@@ -86,13 +85,14 @@ api.set = (aDoc) ->
         # In this case of a Not Found response, the missing database can be the
         # only culprit.
         if res.statusCode is 404
-            msg = "api.set(aId) database '#{couchdb.name}' does not exist."
+            msg = "api.set(aId) database '#{self.couchdb.name}' "
+            msg += "does not exist."
             err = new Error(errMessage(msg))
             err.code = 'ENODB'
             return d.reject(err)
 
         # Assume all other cases are unexpected exceptions.
-        return d.reject(new Error(couchdbErr(err)))
+        return d.reject(new Error(couchdbErr.call(self, err)))
     ))
 
     return d.promise
@@ -132,10 +132,10 @@ api.remove = (aId) ->
         throwInvParam(new Error(errMessage(msg)))
 
     d = Q.defer()
-    revisions = @revisions
+    self = @
     document.del(createHandler(d, (err, body, res) ->
         if res.statusCode is 200
-            delete revisions[body.id]
+            delete self.revisions[body.id]
             return d.resolve(true)
 
         if res.statusCode is 404
@@ -147,7 +147,7 @@ api.remove = (aId) ->
             return d.reject(err)
 
         # Assume all other cases are unexpected exceptions.
-        return d.reject(new Error(couchdbErr(err)))
+        return d.reject(new Error(couchdbErr.call(self, err)))
     ))
 
     return d.promise
@@ -188,20 +188,19 @@ api.query = (aIndex, aQuery) ->
     query_params(aIndex, aQuery)
 
     d = Q.defer()
-    revisions = @revisions
-    couchdb = @couchdb
+    self = @
     view = @couchdb.designDoc('application').view(aIndex)
     view.query(aQuery, createHandler(d, (err, body, res) ->
         if res.statusCode is 200
             docs = body.rows.map (row) ->
-                return receiveDoc(row.value, revisions)
+                return receiveDoc(row.value, self.revisions)
             return d.resolve(docs)
 
         if res.statusCode is 404
             # There are two kinds of Not Found responses. One for a missing
             # database, and one for a missing design document.
             if err and err.reason is 'no_db_file'
-                msg = "api.query(aId) database '#{couchdb.name}' does not exist."
+                msg = "api.query(aId) database '#{self.couchdb.name}' does not exist."
                 err = new Error(errMessage(msg))
                 err.code = 'ENODB'
                 return d.reject(err)
@@ -212,7 +211,7 @@ api.query = (aIndex, aQuery) ->
             return d.reject(err)
 
         # Assume all other cases are unexpected exceptions.
-        return d.reject(new Error(couchdbErr(err)))
+        return d.reject(new Error(couchdbErr.call(self, err)))
     ))
 
     return d.promise
@@ -293,7 +292,10 @@ couchdbErr = (aErr) ->
     if aErr.error and aErr.reason
         msg += "#{aErr.error}, reason: #{aErr.reason}"
     else if aErr.code is 'ECONNREFUSED'
+        href = ((@couchdb or {})._url or {}).href
         msg += "HTTP Connection refused."
+        if href
+            msg = msg.replace(/refused.$/, "to #{href} refused.")
     else if aErr.message then msg += aErr.message
     else msg += aErr.toString()
     return msg
