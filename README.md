@@ -45,104 +45,125 @@ Create a database API by creating a connection. In the case of CouchDB it looks 
 The connect() docs:
 
 ### ::connect
-_::connect(aOpts)_ Create a database connection.
+__::connect(aOpts)__ Create a database connection.
 
-* aOpts - An options Object hash
-* aOpts.hostname - The String hostname of the CouchDB server.
-* aOpts.port - The port Number to use (default: 5984 if aOpts.secure is
+* *__aOpts__* - An options Object hash
+* *__aOpts.hostname__* - The String hostname of the CouchDB server.
+* *__aOpts.port__* - The port Number to use (default: 5984 if aOpts.secure is
                false, and 443 if it is true).
-* aOpts.database - The String database name to use.
-* aOpts.secure - A boolean flag to indicate the connection should be
+* *__aOpts.database__* - The String database name to use.
+* *__aOpts.secure__* - A boolean flag to indicate the connection should be
             secure (default: false).
-* aOpts.creds - An credentials Object hash.
-* aOpts.creds.username - The username String.
-* aOpts.creds.password - The password String.
+* *__aOpts.creds__* - An credentials Object hash.
+* *__aOpts.creds.username__* - The username String.
+* *__aOpts.creds.password__* - The password String.
 
-_Throws_ Error objects with code 'INVPARAM' if any invalid parameters are
+*__Throws__* Error objects with code 'INVPARAM' if any invalid parameters are
 passed or required parameters are missing.
 
-_Returns_ a Database API instance.
+*__Returns__* a Database API instance.
 
 ## Database API
-Once you have a database connection, you can start using the API. All function
+Once you have a database connection, you can start using the API. All functions
 return a Promise object from the Q module. Use the examples below and the
 [Q documentation](https://github.com/kriskowal/q#readme)
-to learn how to use Promises to be a master of this asynchronous environment.
+to learn how to use Promises to master of the Node.js asynchronous environment.
 
 ### get
-_get(aId)_ Fetch a document from the database.
+__get(aId)__ Fetch a document from the database.
 
-* aId - The id String of the document to get.
+* *__aId__* - The id String of the document to get.
 
-_Returns_ a Q::Promise Object which resolves to an Object representation of the
+*__Returns__* a Q::Promise Object which resolves to an Object representation of the
 document. If the document does not exist in the database then the promise will
 resolve to null.
 
 ```JavaScript
-function requestHandler(req, res) {
-    var postId = req.url.split('/')[1];
+    var docId = 'abc123';
 
     function success(document) {
         if (document) {
-            res.statusCode = 200;
-            res.end(document.body);
+            console.log('got document', document);
         } else {
-            res.statusCode = 404;
-            res.end('Not Found');
+            console.log('document is not in the DB');
         }
         return;
     }
 
     function failure(err) {
-        res.statusCode = 500;
-        res.end(err.stack);
-        return;
+        console.error('Unexpected Database error:');
+        console.error(err.stack);
     }
 
-    db.get(postId).then(success, failure);
-    return;
-}
+    db.get(docId).then(success, failure);
 ```
 
 ### set
-_set(aDoc)_ Save a document to the database.
+__set(aDoc)__ Save a document to the database.
 
-* aDoc - The JavaScript Object representing the document.
+* *__aDoc__* - The JavaScript Object representing the document.
 
-_Returns_ a Q::Promise Object which resolves to a *new* Object representation
+*__Returns__* a Q::Promise Object which resolves to a *new* Object representation
 of the document. The promise will reject if there is a conflict error.
 
-### remove
-_remove(aId)_ Delete a document from the database.
+```JavaScript
+function myTransaction() {
+    var doc = {
+      first_name: 'John'
+    , last_name: 'Doe'
+    , age: 44
+    , _id: 'abc123'
+    };
 
-* aId - The id String of the document to delete.
+    function success(document) {
+        console.log('Saved document.');
+    }
+
+    function failure(err) {
+        if (err.code === 'CONFLICT') {
+            console.log('Document conflict error. Trying again.);
+            myTransaction();
+        } else {
+            console.error('Unexpected Database error:');
+            console.error(err.stack);
+        }
+    }
+
+    return db.set(doc).then(success, failure);
+}
+```
+
+### remove
+__remove(aId)__ Delete a document from the database.
+
+* *__aId__* - The id String of the document to delete.
 
 If the document has not been fetched with .get() or query() then an Error
 with code 'INVPARAM' will be thrown.
 
-_Returns_ a Q::Promise Object which resolves to `true` if the document was
+*__Returns__* a Q::Promise Object which resolves to `true` if the document was
 deleted and `false` if it didn't exist in the first place. The promise will
 reject if there is a conflict error.
 
 ### query
-_query(aIndex, aQuery)_ Query an index of documents based on a key range.
+__query(aIndex, aQuery)__ Query an index of documents based on a key range.
 
-* aIndex - The name String of the index to query.
-* aQuery - The Object hash of query parameters.
-* aQuery.key - The key to use (may be String, Number, Null, or Array).
-* aQuery.limit - The max Number of documents to include in the results.
-* aQuery.descending - A Boolean flag which can be used to reverse the
+* *__aIndex__* - The name String of the index to query.
+* *__aQuery__* - The Object hash of query parameters.
+* *__aQuery.key__* - The key to use (may be String, Number, Null, or Array).
+* *__aQuery.limit__* - The max Number of documents to include in the results.
+* *__aQuery.descending__* - A Boolean flag which can be used to reverse the
                       order of the range scan (default: false).
-* aQuery.startkey - The key to begin a range scan on
+* *__aQuery.startkey__* - The key to begin a range scan on
                     (may be String, Number, Null, or Array).
-* aQuery.endkey - The key to end a range scan on
+* *__aQuery.endkey__* - The key to end a range scan on
                   (may be String, Number, Null, or Array).
 
 It is assumed that the index has already been created through another
 channel.  If it hasn't, then the returned Q::Promise will reject with a
 'NOTFOUND' Error.
 
-_Returns_ a Q::Promise Object which resolves to an Array of documents
+*__Returns__* a Q::Promise Object which resolves to an Array of documents
 represented by JavaScript Objects.
 
 
