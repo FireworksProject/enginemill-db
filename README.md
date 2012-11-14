@@ -121,7 +121,7 @@ function myTransaction() {
 
     function failure(err) {
         if (err.code === 'CONFLICT') {
-            console.log('Document conflict error. Trying again.);
+            console.log('Document conflict error. Trying again.');
             myTransaction();
         } else {
             console.error('Unexpected Database error:');
